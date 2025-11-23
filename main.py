@@ -1,5 +1,8 @@
+#librerias propias del proyecto
+from seleccion_poligono import show_polygon_section
+
 def main():
-    print("Hello from ecosistema-datos!")
+    show_polygon_section()
 
 
 if __name__ == "__main__":
