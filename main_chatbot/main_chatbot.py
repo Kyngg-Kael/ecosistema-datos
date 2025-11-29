@@ -1,21 +1,31 @@
-import pandas as pd
-import nltk
-from groq import Groq
 import glob
 import os
-import geopandas as gpd
 import re 
+
+import pandas as pd
+import geopandas as gpd
+import nltk
+from groq import Groq
 import numpy as np
 import streamlit as st
+import nltk
+from nltk.data import find
 
-nltk.download('punkt')
+try:
+    find("tokenizers/punkt")
+except LookupError:
+    nltk.download("punkt", quiet=True)
 
-client = Groq(api_key="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") #
 
-st.set_page_config(
-    page_title="Asistente de Chat",
-    layout="centered",
-)
+
+# ===================== CLIENTE GROQ SEGURO =====================
+@st.cache_resource
+def _get_client():
+    # Clave directa (solo para desarrollo local)
+    return Groq(api_key="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")
+
+client = _get_client()
+
 
 def load_csv(file_path):
     return pd.read_csv(file_path)
@@ -25,9 +35,18 @@ def load_gpkg(file_path):
     return pd.DataFrame(gdf) 
 
 def load_all_dataframes():
-    csv_files = glob.glob("*.csv") 
-    gpkg_files = glob.glob("*.gpkg") #
-    all_files = csv_files + gpkg_files #
+    # Busca en la raíz Y en la carpeta data/
+    patterns = [
+        "*.csv", "*.gpkg",           # raíz del proyecto
+        "data/*.csv", "data/*.gpkg", # carpeta data
+        "data/**/*.csv", "data/**/*.gpkg"  # subcarpetas (por si acaso)
+    ]
+    all_files = []
+    for pattern in patterns:
+        all_files.extend(glob.glob(pattern, recursive=True))
+        
+    # Eliminar duplicados por si algún archivo está en varios lugares
+    all_files = list(set(all_files))
 
     if not all_files:
         st.error("No se encontraron archivos en el directorio actual.")
@@ -131,9 +150,17 @@ def search_in_data(query, dataframe):
     
     return result[:10]
 
-def chat():
-    st.title("Sistema Inteligente de Análisis Territorial y Agroambiental")
-    st.write("Bienvenido a tu asistente de información de Ecosistema")
+def chatbot():
+    st.markdown(
+    "<h2 style='font-size:24px; font-weight:600;'>Sistema Inteligente de Análisis Territorial y Agroambiental</h2>",
+    unsafe_allow_html=True
+    )
+
+    st.markdown(
+        "<p style='font-size:16px;'>Bienvenido a tu asistente de información de Ecosistema</p>",
+        unsafe_allow_html=True
+    )
+
 
     if 'messages' not in st.session_state:
         st.session_state['messages'] = []
@@ -224,15 +251,61 @@ def chat():
             
         st.session_state['messages'].append({"role": "assistant", "content": full_response})
 
+        # === HISTORIAL DE MENSAJES ===
     for message in st.session_state['messages']:
-        if message["role"] == "user":
-            st.chat_message("user").markdown(f"**Tú**: {message['content']}")
+        if message["role"] == "system":
+            continue
+        elif message["role"] == "user":
+            with st.chat_message("user"):
+                st.markdown(message["content"])
         elif message["role"] == "assistant":
-            st.chat_message("assistant").markdown(f"**Bot**: {message['content']}")
-            
-    with st.form(key='chat_form', clear_on_submit=True):
-        st.text_input("Ingresa tu consulta:", key="user_input")
-        st.form_submit_button(label='Enviar', on_click=submit)
+            with st.chat_message("assistant"):
+                st.markdown(message["content"])
 
-if __name__ == "__main__":
-    chat()
+    # === INPUT MODERNO ===
+    if prompt := st.chat_input("Escribe tu consulta sobre cultivos, predios, biodiversidad, etc."):
+        st.session_state['messages'].append({"role": "user", "content": prompt})
+        with st.chat_message("user"):
+            st.markdown(prompt)
+
+        # Análisis automático
+        operation, analytic_result = analyze_numeric_query(prompt, combined_dataframe)
+        current_messages = st.session_state['messages'].copy()
+
+        with st.chat_message("assistant"):
+            placeholder = st.empty()
+            full_response = ""
+
+            if analytic_result and operation:
+                context = f"""
+                Responde usando estos datos calculados: {analytic_result}
+                Máximo 2 oraciones, enfocado en sostenibilidad y biodiversidad.
+                """
+            else:
+                search_results = search_in_data(prompt, combined_dataframe)
+                if search_results:
+                    preview = "\n".join([str(r) for r in search_results[:3]])
+                    context = f"""
+                    Encontré estos datos relevantes:\n{preview}\n
+                    Responde breve contextualizando desde biodiversidad o dinámicas socioculturales.
+                    """
+                else:
+                    context = "No encontré datos específicos. Responde con conocimiento general sobre Colombia."
+
+            # Mensaje con contexto
+            current_messages.append({"role": "user", "content": f"[INSTRUCCIÓN: {context}]\nPregunta del usuario: {prompt}"})
+
+            for chunk in client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=current_messages,
+                temperature=0.3,
+                max_tokens=600,
+                stream=True
+            ):
+                content = chunk.choices[0].delta.content or ""
+                full_response += content
+                placeholder.markdown(full_response + "▌")
+
+            placeholder.markdown(full_response)
+
+        st.session_state['messages'].append({"role": "assistant", "content": full_response})
