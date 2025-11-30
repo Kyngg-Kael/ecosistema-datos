@@ -8,5 +8,47 @@ wheels/
 
 # Virtual environments
 .venv
+venv/
 
-data
+# Data directories 
+data/
+data/raw/ 
+data/processed/ 
+
+# Notebooks y Jupyter/IPython
+.ipynb_checkpoints/
+
+# Tests y caches
+.pytest_cache/
+coverage/
+.htmlcov/
+
+# Documentos y outputs generados
+docs/outputs/
+*.log 
+*.tmp
+*.bak
+
+# Archivos binarios y grandes (extiende lo tuyo)
+*.pdf
+*.xlsx
+*.docx
+*.tif  
+*.geojson  
+*.shp
+*.shx
+*.dbf
+
+# Variables de entorno y secrets
+.env
+*.env
+secrets.yaml
+
+# OS-specific
+.DS_Store  
+Thumbs.db 
+*.swp 
+
+# Otros tools
+.mypy_cache/
+.ruff_cache/
