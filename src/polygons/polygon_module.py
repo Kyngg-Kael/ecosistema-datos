@@ -94,6 +94,8 @@ def show_polygon_section():
                 #buscar archivos .shp en temporal
                 if shp_files:
                     gdf = gpd.read_file(os.path.join(tmpdir, shp_files[0]))
+                    if gdf.crs and gdf.crs.to_string() != "EPSG:4326":
+                        gdf = gdf.to_crs(epsg=4326) # <--- Agrega esto
                     #cargar el primer .shp como GeoDataFrame (manejando geometrías y atributos)
 
                     if len(gdf) > 1:

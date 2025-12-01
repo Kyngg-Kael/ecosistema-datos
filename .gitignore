@@ -15,7 +15,7 @@ data/
 data/raw/ 
 data/processed/ 
 
-# Notebooks y Jupyter/IPython
+# Jupyter
 .ipynb_checkpoints/
 
 # Tests y caches
@@ -29,7 +29,7 @@ docs/outputs/
 *.tmp
 *.bak
 
-# Archivos binarios y grandes (extiende lo tuyo)
+# Archivos binarios y grandes
 *.pdf
 *.xlsx
 *.docx
