@@ -68,6 +68,9 @@ El sistema integra fuentes de datos abiertos nacionales e internacionales para g
 
 ---
 
+## Acceso a la data utilizada
+[Data](https://drive.google.com/drive/folders/1BsUhES4dArZy-bwCSDxKqgNs06zU3cIM?usp=sharing)
+
 ## Equipo
 
 Somos un equipo de 4 personas apasionadas por la ciencia de datos, el impacto ambiental y la equidad territorial. Cada uno contribuye con su experiencia para hacer realidad esta visión de la Comisión Corográfica del Siglo XXI.
